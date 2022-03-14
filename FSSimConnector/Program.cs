@@ -24,23 +24,39 @@ namespace FSSimConnector
 
         static void Main(string[] args)
         {
+            bool exit = false;
+
+            bool simConnStatus = false;
+            bool configurationStatus = false;
 
             Configuration configuration = new Configuration();
             configuration = configuration.LoadConfiguration();
 
             serialManager updateArduinoCallback = new serialManager(updateArduino);
-            simManager updateSimCallback = new simManager(updateSim);
+            simManager updateSimulatorCallback = new simManager(updateSim);
 
-            SimConnect simconnect = simConnection.connect(configuration.simulator.reconnectInterval);
-            Thread dataRequest = new Thread(() => simConnection.initDataRequest(updateArduinoCallback, configuration.simulator.refreshIntervalMillis,true));
-            dataRequest.Start();
+            configurationStatus = serialPort.LoadConfiguration(configuration.serialPort);
+            simConnStatus = simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
 
-            serialPort.initializeSerialPort(updateSimCallback, configuration.serialPort, simconnect);
-
-            simConnection.requestSendAllData();
-
-            while (true)
+            
+            if (configurationStatus && simConnStatus)
             {
+                Console.WriteLine("Starting simulator communication thread");
+                Thread dataRequest = new Thread(() => simConnection.initDataRequest(updateArduinoCallback, configuration.simulator.simDataRefreshIntervalMillis, true));
+                dataRequest.Start();
+
+                Console.WriteLine("Starting serial port communication thread");
+                serialPort.initializeSerialPort(updateSimulatorCallback, configuration.serialPort);
+            }
+            
+            Console.WriteLine("");
+            Console.WriteLine("Type 'exit' and press enter to quit.");
+
+            while (!exit)
+            {
+                string input = Console.ReadLine();
+
+                exit = input.Equals("exit");
 
             }
         }

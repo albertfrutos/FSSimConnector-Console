@@ -1,13 +1,14 @@
 {
   "serialPort": {
-    "PortName": "COM5",
+    "PortName": "COM50",
     "BaudRate": "115200",
     "Parity": "None",
     "DataBits": "8",
     "StopBits": "1"
   },
   "simulator": {
-    "refreshIntervalMillis": 500,
-    "reconnectInterval": 5
+    "simDataRefreshIntervalMillis": 500,
+    "reconnectInterval": 500,
+    "maxReconnectRetries":  3
   }
 }

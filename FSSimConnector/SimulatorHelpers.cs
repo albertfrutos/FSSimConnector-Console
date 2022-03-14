@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace FSSimConnector
 {
-    internal class Helpers
+    internal class SimulatorHelpers
     {
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct Struct1

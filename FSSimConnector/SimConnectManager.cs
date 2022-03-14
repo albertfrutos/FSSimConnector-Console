@@ -11,7 +11,7 @@ using static FSSimConnector.Program;
 
 namespace FSSimConnector
 {
-    internal class SimConnectManager : Helpers
+    internal class SimConnectManager : SimulatorHelpers
     {
         private static SimConnect my_simconnect = null;
         public static Timer timer1 = null;
@@ -23,6 +23,7 @@ namespace FSSimConnector
   
         public void requestSendAllData()
         {
+            Console.WriteLine("Next data report from simulator will contain all requested data.");
             sendAllData = true;
         }
 
@@ -147,24 +148,34 @@ namespace FSSimConnector
             }
         }
 
-        public SimConnect connect(int reconnectInterval)
+        public bool connect(int reconnectInterval, int maxReconnectRetries = 5)
         {
+            int retryNumber = 0;
+
             while (my_simconnect == null)
             {
-                Console.WriteLine("Connecting to simulator");
+                retryNumber++;
+
+                if (retryNumber > maxReconnectRetries)
+                {
+                    Console.WriteLine("Maximum number of {0} attempts reached. Exiting simulator connector module...", maxReconnectRetries);
+                    return false;
+                }
+
+                Console.WriteLine("Connecting to simulator. (attempt {0} out of {1})", retryNumber, maxReconnectRetries);
                 try
                 {
                     my_simconnect = new Microsoft.FlightSimulator.SimConnect.SimConnect("Managed Data Request", IntPtr.Zero, 0x402, null, 0);
 
-                    Console.WriteLine("Successfully connected to sim");
+                    Console.WriteLine("Successfully connected to simulator");
                 }
                 catch (COMException)
                 {
-                    Console.WriteLine("Unable to connect to sim. Reconnecting in {0} seconds...",reconnectInterval);
+                    Console.WriteLine("Unable to connect to sim. Reconnecting in {0} seconds...", reconnectInterval);
                     Thread.Sleep(reconnectInterval);
                 }
             }
-            return my_simconnect;
+            return true;
         }
 
         private static void simconnect_OnRecvException(SimConnect sender, SIMCONNECT_RECV_EXCEPTION data)
