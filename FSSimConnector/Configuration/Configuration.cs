@@ -26,22 +26,4 @@ namespace FSSimConnector
             return config;
         }
     }
-
-    internal class SimulatorConfiguration
-    {
-        public int simDataRefreshIntervalMillis { get; set; }
-
-        public int reconnectInterval { get; set; }
-
-        public int maxReconnectRetries { get; set; }
-    }
-
-    internal class SerialPortConfiguration
-    {
-        public string PortName { get; set; }
-        public int BaudRate { get; set; }
-        public string Parity { get; set; } //not used, always 'None'
-        public int DataBits { get; set; }
-        public int StopBits { get; set; }  //not used, always 'One'
-    }
 }

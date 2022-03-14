@@ -171,7 +171,7 @@ namespace FSSimConnector
                 }
                 catch (COMException)
                 {
-                    Console.WriteLine("Unable to connect to sim. Reconnecting in {0} seconds...", reconnectInterval);
+                    Console.WriteLine("Unable to connect to sim. Reconnecting in {0} seconds...", (float)reconnectInterval/1000);
                     Thread.Sleep(reconnectInterval);
                 }
             }

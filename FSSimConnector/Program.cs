@@ -35,18 +35,18 @@ namespace FSSimConnector
             serialManager updateArduinoCallback = new serialManager(updateArduino);
             simManager updateSimulatorCallback = new simManager(updateSim);
 
-            configurationStatus = serialPort.LoadConfiguration(configuration.serialPort);
-            simConnStatus = simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
+            configurationStatus = serialPort.initializeSerialPort(configuration.serialPort);
+            simConnStatus = true; //simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
 
             
             if (configurationStatus && simConnStatus)
             {
                 Console.WriteLine("Starting simulator communication thread");
                 Thread dataRequest = new Thread(() => simConnection.initDataRequest(updateArduinoCallback, configuration.simulator.simDataRefreshIntervalMillis, true));
-                dataRequest.Start();
+                //dataRequest.Start();
 
                 Console.WriteLine("Starting serial port communication thread");
-                serialPort.initializeSerialPort(updateSimulatorCallback, configuration.serialPort);
+                serialPort.startSerialPort(updateSimulatorCallback, configuration.serialPort);
             }
             
             Console.WriteLine("");

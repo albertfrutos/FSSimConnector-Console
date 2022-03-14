@@ -14,57 +14,29 @@ namespace FSSimConnector
         SerialPort MyCOMPort = new SerialPort();
 
         static simManager updateSimCallback;
-        public bool ConfigureSerialPort(SerialPortConfiguration config)
+
+        public bool initializeSerialPort(SerialPortConfiguration serialConfig)
         {
-            bool portExists = false;
-            bool portAvailable = false;
             
-            MyCOMPort.PortName = config.PortName;
-            MyCOMPort.BaudRate = config.BaudRate;
-            MyCOMPort.Parity = Parity.None;
-            MyCOMPort.DataBits = config.DataBits;
-            MyCOMPort.StopBits = StopBits.One;
-            MyCOMPort.RtsEnable = true;
 
-            portExists = CheckPortExists(config.PortName);
-            portAvailable = CheckPortIsAvailable(MyCOMPort);
+            bool portReady = false;
 
-            return portExists && portAvailable;
+            SerialPortConfiguration serialPortConfiguration = new SerialPortConfiguration();
 
-        }
+            MyCOMPort = serialPortConfiguration.LoadSerialConfiguration(serialConfig);
 
-        public bool LoadConfiguration(SerialPortConfiguration config)
-        {
-            bool successfulConfiguration = ConfigureSerialPort(config);
+            portReady = serialPortConfiguration.isPortReady(MyCOMPort);
+            
+            
 
-            if (!successfulConfiguration)
+            if (!portReady)
             {
-                Console.WriteLine("Errors found duting configuration verification or load.");
+                Console.WriteLine("Errors found during configuration verification or load or serial port inicialization.");
             }
-
-            return successfulConfiguration;
+            return portReady;
         }
 
-        private bool CheckPortIsAvailable(SerialPort myCOMPort)
-        {            
-                return !myCOMPort.IsOpen;   
-        }
-
-        private bool CheckPortExists(string portName)
-        {
-            bool isPortValid = true;
-
-            string[] availablePorts = SerialPort.GetPortNames();
-
-            if (!availablePorts.Any(x => x == portName)){
-                Console.WriteLine("Configured port {0} not available in the system. Available ports: {1}. Will now quit serial module...", portName, String.Join(",",availablePorts));
-                isPortValid = false;
-            }
-
-            return isPortValid;
-        }
-
-        public void initializeSerialPort(simManager callback, SerialPortConfiguration config)
+        public void startSerialPort(simManager callback, SerialPortConfiguration config)
         {
             updateSimCallback = callback;
 
