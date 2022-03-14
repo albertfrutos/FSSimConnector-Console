@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using static FSSimConnector.Program;
@@ -93,11 +94,16 @@ namespace FSSimConnector
 
         public void ProcessCommandFromArduino(string command)
         {
-            var splittedCommand = command.Split('=');
-            string eventName = splittedCommand[0];
-            uint value = uint.Parse(splittedCommand[1]);
-            //Console.WriteLine(eventName + " - " + value);
-            sendEvent(eventName.Split('/')[1], value);
+            string eventName = "";
+            uint value = 0;
+            string pattern = @"^@(.*)\/(.*)=(.*)\$$";
+            Match match = Regex.Match(command, pattern);
+            if (match.Success)
+            {
+                eventName = match.Groups[2].Value;
+                value = uint.Parse(match.Groups[3].Value);
+            }
+            sendEvent(eventName, value);
             RequestSimulatorData();
         }
 
@@ -144,7 +150,7 @@ namespace FSSimConnector
             }
             catch (COMException exception1)
             {
-                //displayText(exception1.Message);
+                Console.WriteLine(exception1.Message);
             }
         }
 

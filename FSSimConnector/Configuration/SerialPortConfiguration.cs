@@ -21,17 +21,13 @@ namespace FSSimConnector
         public SerialPort LoadSerialConfiguration(SerialPortConfiguration config)
         {
             SerialPort MyCOMPort = new SerialPort();
-            
-
             MyCOMPort.PortName = config.PortName;
             MyCOMPort.BaudRate = config.BaudRate;
             MyCOMPort.Parity = System.IO.Ports.Parity.None;
             MyCOMPort.DataBits = config.DataBits;
             MyCOMPort.StopBits = System.IO.Ports.StopBits.One;
             MyCOMPort.RtsEnable = true;
-
-           
-
+            MyCOMPort.NewLine = "\r\n";
             return MyCOMPort;
         }
 

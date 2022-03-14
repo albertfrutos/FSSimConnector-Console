@@ -17,8 +17,6 @@ namespace FSSimConnector
 
         public bool initializeSerialPort(SerialPortConfiguration serialConfig)
         {
-            
-
             bool portReady = false;
 
             SerialPortConfiguration serialPortConfiguration = new SerialPortConfiguration();
@@ -27,8 +25,6 @@ namespace FSSimConnector
 
             portReady = serialPortConfiguration.isPortReady(MyCOMPort);
             
-            
-
             if (!portReady)
             {
                 Console.WriteLine("Errors found during configuration verification or load or serial port inicialization.");
@@ -51,36 +47,14 @@ namespace FSSimConnector
                 MyCOMPort.Dispose();
             }
 
-            
-
-            //MyCOMPort.WriteLine("@4/HEADING_BUG_SET=32$");
-
-            int num;
-
-
             while (true)
             {
-
-
-
                 try
                 {
                     if (MyCOMPort.BytesToRead > 0)
                     {
-                        
-                        //string command = MyCOMPort.ReadLine();
-                        MyCOMPort.ReadTo("@");
-                        string command = MyCOMPort.ReadTo("$");
-                        //Console.WriteLine("Command is: " + command);
-
-                       // num = Int32.Parse(command.Split('=')[1]) + 1;
-                        //Console.WriteLine("--> @4/HEADING_BUG_SET=" + num.ToString() + "$");
-                        //SerialSendData("@4/HEADING_BUG_SET=" + num.ToString() + "$");
-                        //updateSimCallback(command);
-                        //SimConnectManager.ProcessCommandFromArduino(command);
-
+                        string command = MyCOMPort.ReadLine();
                         updateSimCallback(command);
-
                     }
                 }
                 catch (IOException ex)
@@ -88,16 +62,8 @@ namespace FSSimConnector
                     Console.Write(ex.ToString());
                     MyCOMPort.Dispose();
                 }
-
             }
-            
-
-
         }
-
-
-
-
         public void SerialSendData(string cmdToSend)
         {
             try

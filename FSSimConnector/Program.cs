@@ -36,41 +36,42 @@ namespace FSSimConnector
             simManager updateSimulatorCallback = new simManager(updateSim);
 
             configurationStatus = serialPort.initializeSerialPort(configuration.serialPort);
-            simConnStatus = true; //simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
+            simConnStatus = simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
 
-            
+            Thread simulatorDataManager = new Thread(() => simConnection.initDataRequest(updateArduinoCallback, configuration.simulator.simDataRefreshIntervalMillis, true));
+            Thread serialDataManager = new Thread(() => serialPort.startSerialPort(updateSimulatorCallback, configuration.serialPort));
+
             if (configurationStatus && simConnStatus)
             {
                 Console.WriteLine("Starting simulator communication thread");
-                Thread dataRequest = new Thread(() => simConnection.initDataRequest(updateArduinoCallback, configuration.simulator.simDataRefreshIntervalMillis, true));
-                //dataRequest.Start();
+                simulatorDataManager.Start();
 
                 Console.WriteLine("Starting serial port communication thread");
-                serialPort.startSerialPort(updateSimulatorCallback, configuration.serialPort);
+                serialDataManager.Start();
             }
-            
-            Console.WriteLine("");
+
             Console.WriteLine("Type 'exit' and press enter to quit.");
 
             while (!exit)
             {
                 string input = Console.ReadLine();
-
                 exit = input.Equals("exit");
-
             }
+
+            simulatorDataManager.Abort();
+            serialDataManager.Abort();
         }
 
         public static void updateSim(string command)
         {
-            simConnection.ProcessCommandFromArduino(command);
             Console.WriteLine("Ard -> Sim : " + command);
+            simConnection.ProcessCommandFromArduino(command);
         }
 
         public static void updateArduino(string command)
         {
-            serialPort.SerialSendData(command);
             Console.WriteLine("Sim -> Ard : " + command);
+            serialPort.SerialSendData(command);
         }
 
     }

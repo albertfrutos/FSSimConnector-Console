@@ -12,7 +12,7 @@ namespace FSSimConnector
     {
         public SimulatorConfiguration simulator { get; set; }
         public SerialPortConfiguration serialPort { get; set; }
-
+        
         public Configuration LoadConfiguration()
         {
             var json = File.ReadAllText(@"Files\config.json");
