@@ -15,7 +15,7 @@ namespace FSSimConnector
     internal class SimConnectManager : SimulatorHelpers
     {
         private static SimConnect my_simconnect = null;
-        public static Timer timer1 = null;
+        public static Timer timer = null;
         private static bool sendAllData = false;
 
         static serialManager updateArduinoCallback;
@@ -142,8 +142,7 @@ namespace FSSimConnector
                 my_simconnect.RegisterDataDefineStruct<Struct1>(DEFINITIONS.Struct1);
                 my_simconnect.OnRecvSimobjectDataBytype += new SimConnect.RecvSimobjectDataBytypeEventHandler(simconnect_OnRecvSimobjectDataBytype);
 
-                timer1 = new Timer(TimerCallback, null, 0, refreshIntervalMillis);
-
+                timer = new Timer(TimerCallback, null, 0, refreshIntervalMillis);
                 RequestSimulatorData();
 
                 updateArduinoCallback = callback;
@@ -196,8 +195,10 @@ namespace FSSimConnector
 
         private static void simconnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
         {
+            timer.Dispose();
+            Console.WriteLine("Simulator has exited. Closing connection and exiting Simulator module");
             closeConnection();
-            timer1 = null;
+            
         }
 
         private static void closeConnection()
@@ -206,18 +207,34 @@ namespace FSSimConnector
             {
                 my_simconnect.Dispose();
                 my_simconnect = null;
-                //label_status.Text = "Connection closed";
             }
+
+            return;
         }
 
         private static void RequestSimulatorData()
         {
-            my_simconnect.ReceiveMessage();
-            my_simconnect.RequestDataOnSimObjectType(DATA_REQUESTS.REQUEST_1, DEFINITIONS.Struct1, 0, SIMCONNECT_SIMOBJECT_TYPE.USER);
+            receiveMessagesFromSimulator();
+            sendDataRequestToSimulator();
         }
 
+        private static void sendDataRequestToSimulator()
+        {
+            if (my_simconnect != null)
+            {
+                my_simconnect.RequestDataOnSimObjectType(DATA_REQUESTS.REQUEST_1, DEFINITIONS.Struct1, 0, SIMCONNECT_SIMOBJECT_TYPE.USER);
+            }
+        }
 
-        private static void TimerCallback(Object o)
+        private static void receiveMessagesFromSimulator()
+        {
+            if (my_simconnect != null)
+            {
+                my_simconnect.ReceiveMessage();
+            }
+        }
+
+        public static void TimerCallback(Object o)
         {
             RequestSimulatorData();            
         }
