@@ -17,6 +17,8 @@ namespace FSSimConnector
         public string Parity { get; set; } //not used, always 'None'
         public int DataBits { get; set; }
         public int StopBits { get; set; }  //not used, always 'One'
+        public int keepAliveMillis { get; set; }
+        public int keepAliveTimeoutMillis { get; set; }
 
         public SerialPort LoadSerialConfiguration(SerialPortConfiguration config)
         {

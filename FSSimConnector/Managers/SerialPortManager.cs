@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO.Ports;
 using System.IO;
-using static FSSimConnector.Program;
+using System.Timers;
 using static FSSimConnector.FSSimConnectorManager;
 
 namespace FSSimConnector
@@ -16,26 +12,31 @@ namespace FSSimConnector
 
         static simManager updateSimCallback;
 
-        public bool initializeSerialPort(SerialPortConfiguration serialConfig)
+        System.Timers.Timer timerKeepAliveTimer = null;
+        System.Timers.Timer timerKeepAliveTimeout = null;
+
+        bool isSerialAlive = false;
+
+        public bool initialize(SerialPortConfiguration serialConfig)
         {
-            bool portReady = false;
 
             SerialPortConfiguration serialPortConfiguration = new SerialPortConfiguration();
 
             MyCOMPort = serialPortConfiguration.LoadSerialConfiguration(serialConfig);
 
-            portReady = serialPortConfiguration.isPortReady(MyCOMPort);
-            
-            if (!portReady)
-            {
-                Console.WriteLine("Errors found during configuration verification or load or serial port inicialization.");
-            }
-            return portReady;
-        }
+            isSerialAlive = serialPortConfiguration.isPortReady(MyCOMPort);
 
-        public void startSerialPort(simManager callback, SerialPortConfiguration config)
-        {
-            updateSimCallback = callback;
+            if(serialConfig.keepAliveMillis >= serialConfig.keepAliveTimeoutMillis)
+            {
+                Console.WriteLine("KeepAlive interval is higher that the KeepAlive timeout interval.");
+                isSerialAlive = false;
+            }
+
+            if (!isSerialAlive)
+            {
+                Console.WriteLine("Errors found during configuration load or serial port inicialization.");
+                return isSerialAlive;
+            }
 
             try
             {
@@ -45,25 +46,87 @@ namespace FSSimConnector
             catch (IOException ex)
             {
                 Console.Write("Port is already in use {0}. Exiting serial module...", ex.ToString());
-                MyCOMPort.Dispose();
+                closeConnection();
+                isSerialAlive = false;
+                return isSerialAlive;
             }
 
-            while (true)
+            return isSerialAlive;
+        }
+
+        public void StartSerialDataInterchange(simManager callback, SerialPortConfiguration config)
+        {
+            updateSimCallback = callback;
+
+            timerKeepAliveTimer = new System.Timers.Timer(config.keepAliveMillis);
+            timerKeepAliveTimer.Elapsed += new ElapsedEventHandler(SendKeepAlive);
+            timerKeepAliveTimer.Start();
+
+
+            timerKeepAliveTimeout = new System.Timers.Timer(config.keepAliveTimeoutMillis);
+            timerKeepAliveTimeout.Elapsed += new ElapsedEventHandler(KeepAliveIsTimeout);
+            timerKeepAliveTimeout.Start();
+
+
+            while (isSerialAlive)
             {
                 try
                 {
                     if (MyCOMPort.BytesToRead > 0)
                     {
                         string command = MyCOMPort.ReadLine();
-                        updateSimCallback(command);
+                        if (command.StartsWith("@999"))
+                        {
+                            handleInternalMessage(command, config.keepAliveTimeoutMillis);
+                        }
+                        else
+                        {
+                            updateSimCallback(command);
+                        }
                     }
                 }
                 catch (IOException ex)
                 {
-                    Console.Write(ex.ToString());
-                    MyCOMPort.Dispose();
+                    Console.Write("There was an error reading the serial port: " + ex.ToString());
+                    closeConnection();
+                    return;
                 }
             }
+        }
+
+
+
+        private void KeepAliveIsTimeout(object source, ElapsedEventArgs e)
+        {
+            Console.WriteLine("Did not receive timeout response. Stopping and exiting.");
+            isSerialAlive = false;
+            MyCOMPort.Close();
+            MyCOMPort = null;
+            timerKeepAliveTimer.Stop();
+            timerKeepAliveTimeout.Stop();
+        }
+
+        private void handleInternalMessage(string command, int keepAliveTimeoutMillis)
+        {
+            if (command == "@999/KA=1$")
+            {
+                isSerialAlive = true;
+                Console.WriteLine("Received KeepAlive.");
+                timerKeepAliveTimeout.Stop();
+                timerKeepAliveTimeout.Start();
+            }
+        }
+
+        public void SendKeepAlive(object source, ElapsedEventArgs e)
+        {
+            Console.WriteLine("KA Sent");
+            SerialSendData("@999/KA=0$");
+        }
+
+        public void closeConnection()
+        {
+            MyCOMPort.Dispose();
+            MyCOMPort = null;
         }
         public void SerialSendData(string cmdToSend)
         {
@@ -73,9 +136,14 @@ namespace FSSimConnector
             }
             catch (IOException ex)
             {
-                Console.Write(ex.ToString());
-                MyCOMPort.Dispose();
+                Console.Write("There was a problem sending serial data: {0}", ex.ToString());
+                closeConnection();
             }
+        }
+
+        public bool isAlive()
+        {
+            return ((MyCOMPort != null) && isSerialAlive);
         }
     }
 }

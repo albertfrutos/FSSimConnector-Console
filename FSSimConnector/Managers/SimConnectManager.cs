@@ -109,12 +109,13 @@ namespace FSSimConnector
             {
                 eventName = match.Groups[2].Value;
                 value = uint.Parse(match.Groups[3].Value);
+                sendEvent(eventName, value);
+                RequestSimulatorData();
             }
-            sendEvent(eventName, value);
-            RequestSimulatorData();
+            
         }
 
-        public void initDataRequest(serialManager callback, int refreshIntervalMillis, bool sendAllDataAtStart, bool showVariables = false)
+        public void StartSimDataInterchange(serialManager callback, int refreshIntervalMillis, bool sendAllDataAtStart, bool showVariables = false)
         {
             showVariablesOnScreen = showVariables;
 
@@ -158,7 +159,8 @@ namespace FSSimConnector
             }
             catch (COMException exception1)
             {
-                Console.WriteLine(exception1.Message);
+                Console.WriteLine("Exception while initializing data request: {0}", exception1.Message);
+                closeConnection();
             }
         }
 
@@ -255,5 +257,12 @@ namespace FSSimConnector
             my_simconnect.MapClientEventToSimEvent((Enum)eventToSend, eventName);
             my_simconnect.TransmitClientEvent(0U, (Enum)eventToSend, value, (Enum)NOTIFICATION_GROUPS.GROUP0, SIMCONNECT_EVENT_FLAG.GROUPID_IS_PRIORITY);
         }
+
+        
+        public bool isAlive()
+        {
+            return (my_simconnect != null);
+        }
+        
     }
 }

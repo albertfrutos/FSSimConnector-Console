@@ -4,7 +4,9 @@
     "BaudRate": "115200",
     "Parity": "None",
     "DataBits": "8",
-    "StopBits": "1"
+    "StopBits": "1",
+    "keepAliveMillis": "2000",
+    "keepAliveTimeoutMillis": "5000"
   },
   "simulator": {
     "simDataRefreshIntervalMillis": 500,

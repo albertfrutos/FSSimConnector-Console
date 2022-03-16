@@ -18,30 +18,33 @@ namespace FSSimConnector
         public List<Thread> Start()
         {
             bool simConnStatus = false;
-            bool configurationStatus = false;
+            bool serialPortStatus = false;
+            bool exit = false;
 
             List<Thread> threads = new List<Thread>();
 
             Configuration configuration = new Configuration();
             configuration = configuration.LoadConfiguration();
 
-            serialManager updateArduinoCallback = new serialManager(updateArduino);
-            simManager updateSimulatorCallback = new simManager(updateSim);
+            serialManager updateArduinoCallback = new serialManager(SendToArduino);
+            simManager updateSimulatorCallback = new simManager(SendToSimulator);
 
-            configurationStatus = serialPort.initializeSerialPort(configuration.serialPort);
-            simConnStatus = simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
+            serialPortStatus = serialPort.initialize(configuration.serialPort);
+            simConnStatus = true; // simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
 
 
 
-            Thread simulatorDataManager = new Thread(() => simConnection.initDataRequest(updateArduinoCallback, configuration.simulator.simDataRefreshIntervalMillis, true));
-            Thread serialDataManager = new Thread(() => serialPort.startSerialPort(updateSimulatorCallback, configuration.serialPort));
+            //Thread simulatorDataManager = new Thread(() => simConnection.StartSimDataInterchange(updateArduinoCallback, configuration.simulator.simDataRefreshIntervalMillis, true));
+            Thread serialDataManager = new Thread(() => serialPort.StartSerialDataInterchange(updateSimulatorCallback, configuration.serialPort));
 
-            if (configurationStatus && simConnStatus)
+            if (serialPortStatus && simConnStatus)
             {
+                /*
                 Console.WriteLine("Starting simulator communication thread");
                 simulatorDataManager.Name = "SimulatorThread";
                 simulatorDataManager.Start();
                 threads.Add(simulatorDataManager);
+                */
 
                 Console.WriteLine("Starting serial port communication thread");
                 serialDataManager.Name = "SerialPortThread";
@@ -49,16 +52,37 @@ namespace FSSimConnector
                 threads.Add((Thread)serialDataManager);
             }
 
+            while (!exit)
+            {
+                string input = Console.ReadLine();
+                exit = input.Equals("exit");
+            }
+
+            foreach (Thread thread in threads)
+            {
+                Console.WriteLine("Attempting to abort thread {0}", thread.Name);
+                try
+                {
+                    thread.Abort();
+                    thread.Join();
+                    Console.WriteLine("Thread {0} aborted.", thread.Name);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Failed to abort thread {0}. Error is {1} ", thread.Name, ex.Message);
+                }
+            }
+
             return threads;
         }
 
-        public static void updateSim(string command)
+        public static void SendToSimulator(string command)
         {
             Console.WriteLine("Ard -> Sim : " + command);
             simConnection.ProcessCommandFromArduino(command);
         }
 
-        public static void updateArduino(string command)
+        public static void SendToArduino(string command)
         {
             Console.WriteLine("Sim -> Ard : " + command);
             serialPort.SerialSendData(command);
