@@ -8,15 +8,19 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using static FSSimConnector.FSSimConnectorManager;
 using static FSSimConnector.Program;
 
 namespace FSSimConnector
 {
     internal class SimConnectManager : SimulatorHelpers
     {
-        private static SimConnect my_simconnect = null;
-        public static Timer timer = null;
         private static bool sendAllData = false;
+        private static bool showVariablesOnScreen = false;
+
+        private static SimConnect my_simconnect = null;
+        
+        public static Timer timer = null;
 
         static serialManager updateArduinoCallback;
 
@@ -33,24 +37,27 @@ namespace FSSimConnector
             if (data.dwRequestID == 0)
             {
                 Struct1 currentData = (Struct1)data.dwData[0];
-                
-                /*
-                Console.Clear();
-                Console.WriteLine("ApMaster " + currentData.ApMaster);
-                Console.WriteLine("ApFlightDirector " + currentData.ApFlightDirector);
-                Console.WriteLine("ApHdgStatus " + currentData.ApHdgStatus);
-                Console.WriteLine("ApHdgValue " + currentData.ApHdgValue);
-                Console.WriteLine("ApAltitudeStatus " + currentData.ApAltitudeStatus);
-                Console.WriteLine("ApAltitudeValue " + currentData.ApAltitudeValue);
-                Console.WriteLine("ApVerticalSpeedStatus " + currentData.ApVerticalSpeedStatus);
-                Console.WriteLine("ApVerticalSpeedValue " + currentData.ApVerticalSpeedValue);
-                Console.WriteLine("ApFLCStatus " + currentData.ApFLCStatus);
-                Console.WriteLine("ApFLCValue " + currentData.ApFLCValue);
-                Console.WriteLine("ApAutoThrottle " + currentData.ApAutoThrottle);
-                Console.WriteLine("ApBackCourse " + currentData.ApBackCourse);
-                Console.WriteLine("ApApproach " + currentData.ApApproach);
-                Console.WriteLine("ApYawDamper " + currentData.ApYawDamper);
-                */
+
+                if (showVariablesOnScreen)
+                {
+                    
+                    Console.Clear();
+                    Console.WriteLine("ApMaster " + currentData.ApMaster);
+                    Console.WriteLine("ApFlightDirector " + currentData.ApFlightDirector);
+                    Console.WriteLine("ApHdgStatus " + currentData.ApHdgStatus);
+                    Console.WriteLine("ApHdgValue " + currentData.ApHdgValue);
+                    Console.WriteLine("ApAltitudeStatus " + currentData.ApAltitudeStatus);
+                    Console.WriteLine("ApAltitudeValue " + currentData.ApAltitudeValue);
+                    Console.WriteLine("ApVerticalSpeedStatus " + currentData.ApVerticalSpeedStatus);
+                    Console.WriteLine("ApVerticalSpeedValue " + currentData.ApVerticalSpeedValue);
+                    Console.WriteLine("ApFLCStatus " + currentData.ApFLCStatus);
+                    Console.WriteLine("ApFLCValue " + currentData.ApFLCValue);
+                    Console.WriteLine("ApAutoThrottle " + currentData.ApAutoThrottle);
+                    Console.WriteLine("ApBackCourse " + currentData.ApBackCourse);
+                    Console.WriteLine("ApApproach " + currentData.ApApproach);
+                    Console.WriteLine("ApYawDamper " + currentData.ApYawDamper);
+                    
+                }
 
                 if (!previousData.Equals(currentData))
                 {
@@ -107,8 +114,10 @@ namespace FSSimConnector
             RequestSimulatorData();
         }
 
-        public void initDataRequest(serialManager callback, int refreshIntervalMillis, bool sendAllDataAtStart)
+        public void initDataRequest(serialManager callback, int refreshIntervalMillis, bool sendAllDataAtStart, bool showVariables = false)
         {
+            showVariablesOnScreen = showVariables;
+
             if (sendAllDataAtStart)
             {
                 requestSendAllData();
@@ -198,6 +207,7 @@ namespace FSSimConnector
             timer.Dispose();
             Console.WriteLine("Simulator has exited. Closing connection and exiting Simulator module");
             closeConnection();
+            return;
             
         }
 

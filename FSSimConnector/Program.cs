@@ -17,38 +17,15 @@ namespace FSSimConnector
     internal class Program
     {
 
-        public delegate void serialManager(string command);
-        public delegate void simManager(string command);
-        public static SimConnectManager simConnection = new SimConnectManager();
-        public static SerialPortManager serialPort = new SerialPortManager();
+
 
         static void Main(string[] args)
         {
             bool exit = false;
 
-            bool simConnStatus = false;
-            bool configurationStatus = false;
+            FSSimConnectorManager fsSimConnectorManager = new FSSimConnectorManager();
 
-            Configuration configuration = new Configuration();
-            configuration = configuration.LoadConfiguration();
-
-            serialManager updateArduinoCallback = new serialManager(updateArduino);
-            simManager updateSimulatorCallback = new simManager(updateSim);
-
-            configurationStatus = serialPort.initializeSerialPort(configuration.serialPort);
-            simConnStatus = simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
-
-            Thread simulatorDataManager = new Thread(() => simConnection.initDataRequest(updateArduinoCallback, configuration.simulator.simDataRefreshIntervalMillis, true));
-            Thread serialDataManager = new Thread(() => serialPort.startSerialPort(updateSimulatorCallback, configuration.serialPort));
-
-            if (configurationStatus && simConnStatus)
-            {
-                Console.WriteLine("Starting simulator communication thread");
-                simulatorDataManager.Start();
-
-                Console.WriteLine("Starting serial port communication thread");
-                serialDataManager.Start();
-            }
+            List<Thread> appThreads = fsSimConnectorManager.Start();
 
             Console.WriteLine("Type 'exit' and press enter to quit.");
 
@@ -58,21 +35,24 @@ namespace FSSimConnector
                 exit = input.Equals("exit");
             }
 
-            simulatorDataManager.Abort();
-            serialDataManager.Abort();
+            foreach (Thread thread in appThreads)
+            {
+                Console.WriteLine("Attempting to abort thread {0}", thread.Name);
+                try
+                {
+                    thread.Abort();
+                    thread.Join();
+                    Console.WriteLine("Thread {0} aborted.", thread.Name);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Failed to abort thread {0}. Error is {1} ", thread.Name, ex.Message);
+                }
+            }
+            
         }
 
-        public static void updateSim(string command)
-        {
-            Console.WriteLine("Ard -> Sim : " + command);
-            simConnection.ProcessCommandFromArduino(command);
-        }
 
-        public static void updateArduino(string command)
-        {
-            Console.WriteLine("Sim -> Ard : " + command);
-            serialPort.SerialSendData(command);
-        }
 
     }
 }

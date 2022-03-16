@@ -58,6 +58,7 @@
     <Compile Include="Configuration\Configuration.cs" />
     <Compile Include="Configuration\SerialPortConfiguration.cs" />
     <Compile Include="Configuration\SimulatorConfiguration.cs" />
+    <Compile Include="Managers\FSSimConnectorManager.cs" />
     <Compile Include="Helpers\SimulatorHelpers.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

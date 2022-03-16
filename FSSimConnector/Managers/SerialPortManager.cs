@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO.Ports;
 using System.IO;
 using static FSSimConnector.Program;
+using static FSSimConnector.FSSimConnectorManager;
 
 namespace FSSimConnector
 {
