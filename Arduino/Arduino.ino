@@ -9,6 +9,7 @@
 
 #define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Rotary Encoder Inputs
@@ -83,10 +84,6 @@ int getVariableValue(int menuIndex) {
 }
 
 int handleVariableChangeByEncoder(int value, int minValue = minValues[menuIndex], int maxValue = maxValues[menuIndex], int stepValue = stepValues[menuIndex] ) {
-  //Serial.println("h " + String(menuIndex));
-  //int minValue = minValues[menuIndex];
-  //int maxValue = maxValues[menuIndex];
-  //Serial.println(String(minValue) + " - " + String(maxValue));
 
     currentStateCLK = digitalRead(CLK);
     if (currentStateCLK != lastStateCLK  && currentStateCLK == 1) {
@@ -129,7 +126,6 @@ int handleVariableChangeByEncoder(int value, int minValue = minValues[menuIndex]
   return value;
 }
 
-
 void showVarsMenu() {
   menuIndex = handleVariableChangeByEncoder(menuIndex,1,14,1);
   if (menuIndex < 1) {
@@ -164,23 +160,29 @@ void sendUpdate(int eventID, int value){
   Serial.println(command);
 }
 
-
 void setVariableValue(int varID, int value) {
   variablesValues[varID] = value;
   varID = 999;
-
 }
 
 void manageSerialCommunication() {
   if (Serial.available() > 0) {
-
     Serial.readStringUntil('@');
     int varID = (Serial.readStringUntil('/')).toInt();
     String name = Serial.readStringUntil('=');
     int value = (Serial.readStringUntil('$')).toInt();
 
-    variablesValues[varID] = value;
-   
-    varID = 999;
+    if (varID = 999){
+      handleInternalCommand(varID, name, value);
+    }else{
+      variablesValues[varID] = value;
+    }
+  }
+}
+
+void handleInternalCommand(int varID, String name, int value){
+  String internalCommandResponse;
+  if (varID == "KA"){
+    Serial.println("@999/KA=1$");
   }
 }
