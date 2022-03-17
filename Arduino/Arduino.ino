@@ -128,6 +128,7 @@ int handleVariableChangeByEncoder(int value, int minValue = minValues[menuIndex]
 
 void showVarsMenu() {
   menuIndex = handleVariableChangeByEncoder(menuIndex,1,14,1);
+  
   if (menuIndex < 1) {
     menuIndex = 14;
   } else if (menuIndex > 14) {
@@ -157,7 +158,11 @@ void sendUpdate(int eventID, int value){
   String command = "@" + String(eventID) + "/";
   command.concat(String(events[eventID]));
   command.concat("=" + String(getVariableValue(eventID)) + "$");
-  Serial.println(command);
+  SerialSend(command);
+}
+
+void SerialSend(String command) {
+    Serial.println(command);
 }
 
 void setVariableValue(int varID, int value) {
@@ -172,7 +177,7 @@ void manageSerialCommunication() {
     String name = Serial.readStringUntil('=');
     int value = (Serial.readStringUntil('$')).toInt();
 
-    if (varID = 999){
+    if (varID == 999){
       handleInternalCommand(varID, name, value);
     }else{
       variablesValues[varID] = value;
@@ -182,7 +187,10 @@ void manageSerialCommunication() {
 
 void handleInternalCommand(int varID, String name, int value){
   String internalCommandResponse;
+
   if (varID == "KA"){
-    Serial.println("@999/KA=1$");
+      internalCommandResponse = "@999/KA=1$";
   }
+
+  SerialSend(internalCommandResponse);
 }
