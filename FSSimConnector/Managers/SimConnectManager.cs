@@ -20,11 +20,11 @@ namespace FSSimConnector
 
         private static SimConnect my_simconnect = null;
         
-        public static Timer timer = null;
+        private static Timer timer = null;
 
         static serialManager updateArduinoCallback;
 
-        internal static Struct1 previousData = new Struct1();
+        private static Struct1 previousData = new Struct1();
   
         public void requestSendAllData()
         {
@@ -115,7 +115,7 @@ namespace FSSimConnector
             
         }
 
-        public void StartSimDataInterchange(serialManager callback, int refreshIntervalMillis, bool sendAllDataAtStart, bool showVariables = false)
+        public void StartSimDataInterchange(serialManager callback, int refreshIntervalMillis, bool sendAllDataAtStart = true, bool showVariables = false)
         {
             showVariablesOnScreen = showVariables;
 
@@ -253,12 +253,18 @@ namespace FSSimConnector
 
         private static void sendEvent(string eventName, uint value)
         {
-            EVENTS eventToSend = (EVENTS)Enum.Parse(typeof(EVENTS), eventName);
-            my_simconnect.MapClientEventToSimEvent((Enum)eventToSend, eventName);
-            my_simconnect.TransmitClientEvent(0U, (Enum)eventToSend, value, (Enum)NOTIFICATION_GROUPS.GROUP0, SIMCONNECT_EVENT_FLAG.GROUPID_IS_PRIORITY);
+            if(Enum.IsDefined(typeof(EVENTS), eventName))
+            {
+                EVENTS eventToSend = (EVENTS)Enum.Parse(typeof(EVENTS), eventName);
+                my_simconnect.MapClientEventToSimEvent((Enum)eventToSend, eventName);
+                my_simconnect.TransmitClientEvent(0U, (Enum)eventToSend, value, (Enum)NOTIFICATION_GROUPS.GROUP0, SIMCONNECT_EVENT_FLAG.GROUPID_IS_PRIORITY);
+            }
+            else
+            {
+                Console.WriteLine("Received event {0} is not defined. Will not be processed nor sent to the simulator.");
+            }
         }
 
-        
         public bool isAlive()
         {
             return (my_simconnect != null);

@@ -10,9 +10,11 @@ namespace FSSimConnector
 {
     internal class Configuration
     {
+        public string sendAllDataAtStart { get; set; }
+        public string showVariablesOnScreen { get; set; }
         public SimulatorConfiguration simulator { get; set; }
         public SerialPortConfiguration serialPort { get; set; }
-        
+
         public Configuration LoadConfiguration()
         {
             var json = File.ReadAllText(@"Files\config.json");

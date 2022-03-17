@@ -13,25 +13,13 @@ using System.Collections;
 
 namespace FSSimConnector
 {
-
     internal class Program
     {
-
-
-
         static void Main(string[] args)
         {
-
             FSSimConnectorManager fsSimConnectorManager = new FSSimConnectorManager();
 
             fsSimConnectorManager.Start();
-            Console.WriteLine("Type 'exit' and press enter to quit.");
-
-            
-            
         }
-
-
-
     }
 }

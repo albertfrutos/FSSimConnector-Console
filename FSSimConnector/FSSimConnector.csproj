@@ -56,6 +56,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration\Configuration.cs" />
+    <Compile Include="Configuration\KeepAliveSerialConfiguration.cs" />
     <Compile Include="Configuration\SerialPortConfiguration.cs" />
     <Compile Include="Configuration\SimulatorConfiguration.cs" />
     <Compile Include="Managers\FSSimConnectorManager.cs" />
