@@ -30,7 +30,7 @@ namespace FSSimConnector
             simManager updateSimulatorCallback = new simManager(SendToSimulator);
 
             serialPortStatus = serialPort.initialize(configuration.serialPort);
-            simConnStatus = true simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
+            simConnStatus = simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
 
             Thread simulatorDataManager = new Thread(() => simConnection.StartSimDataInterchange(updateArduinoCallback, configuration.simulator.simDataRefreshIntervalMillis, configuration.sendAllDataAtStart, configuration.showVariablesOnScreen));
             Thread serialDataManager = new Thread(() => serialPort.StartSerialDataInterchange(updateSimulatorCallback, configuration.serialPort));

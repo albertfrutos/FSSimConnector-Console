@@ -19,13 +19,13 @@ namespace FSSimConnector
         private static bool showVariablesOnScreen = false;
 
         private static SimConnect my_simconnect = null;
-        
+
         private static Timer timer = null;
 
         static serialManager updateArduinoCallback;
 
         private static Struct1 previousData = new Struct1();
-  
+
         public void requestSendAllData()
         {
             Console.WriteLine("Next data report from simulator will contain all requested data.");
@@ -38,50 +38,42 @@ namespace FSSimConnector
             {
                 Struct1 currentData = (Struct1)data.dwData[0];
 
-                if (showVariablesOnScreen)
+                FieldInfo[] fi = typeof(Struct1).GetFields(BindingFlags.Public | BindingFlags.Instance);
+
+                Console.Clear();
+
+                foreach (FieldInfo info in fi)
                 {
-                    
-                    Console.Clear();
-                    Console.WriteLine("ApMaster " + currentData.ApMaster);
-                    Console.WriteLine("ApFlightDirector " + currentData.ApFlightDirector);
-                    Console.WriteLine("ApHdgStatus " + currentData.ApHdgStatus);
-                    Console.WriteLine("ApHdgValue " + currentData.ApHdgValue);
-                    Console.WriteLine("ApAltitudeStatus " + currentData.ApAltitudeStatus);
-                    Console.WriteLine("ApAltitudeValue " + currentData.ApAltitudeValue);
-                    Console.WriteLine("ApVerticalSpeedStatus " + currentData.ApVerticalSpeedStatus);
-                    Console.WriteLine("ApVerticalSpeedValue " + currentData.ApVerticalSpeedValue);
-                    Console.WriteLine("ApFLCStatus " + currentData.ApFLCStatus);
-                    Console.WriteLine("ApFLCValue " + currentData.ApFLCValue);
-                    Console.WriteLine("ApAutoThrottle " + currentData.ApAutoThrottle);
-                    Console.WriteLine("ApBackCourse " + currentData.ApBackCourse);
-                    Console.WriteLine("ApApproach " + currentData.ApApproach);
-                    Console.WriteLine("ApYawDamper " + currentData.ApYawDamper);
-                    
+                    string parameterName = info.Name;
+                    string parameterCurrentValue = info.GetValue(currentData).ToString();
+                    string parameterPreviousValue = info.GetValue(previousData).ToString();
+
+                    if (showVariablesOnScreen)
+                    {
+                        string flagIsDifferent = parameterCurrentValue != parameterPreviousValue ? "*" : " ";
+                        Console.WriteLine(flagIsDifferent + " " + info.Name + " " + parameterCurrentValue);
+                    }
+
+                    ProcessVarsAndSendToArduino(parameterName, parameterCurrentValue, parameterPreviousValue);
                 }
 
-                if (!previousData.Equals(currentData))
-                {
-                    ProcessVarsAndSendToArduino(currentData,previousData);
-                    previousData = currentData;
-                }              
+                sendAllData = false;
+
+                previousData = currentData;
             }
         }
 
-        private static void ProcessVarsAndSendToArduino(Struct1 currentData, Struct1 previousData)
+        private static void ProcessVarsAndSendToArduino(string name, string parameterCurrentValue, string parameterPreviousValue)
         {
-            FieldInfo[] fi = typeof(Struct1).GetFields(BindingFlags.Public | BindingFlags.Instance);
-            foreach (FieldInfo info in fi)
+
+            if ((!parameterCurrentValue.Equals(parameterPreviousValue)) || sendAllData)
             {
-                if ((!info.GetValue(currentData).Equals(info.GetValue(previousData))) || sendAllData )
-                {
-                    string variableName = info.Name;
-                    string variableValue = MapValues(info.GetValue(currentData).ToString());
-                    int variableID;
-                    structToID.TryGetValue(variableName, out variableID);
-                    updateArduinoCallback("@" + variableID + "/" + variableName + "=" + variableValue + "$");
-                }
+                string variableName = name;
+                //Console.WriteLine(variableName);
+                string variableValue = MapValues(parameterCurrentValue);
+                structToID.TryGetValue(variableName, out int variableID);
+                updateArduinoCallback("@" + variableID + "/" + variableName + "=" + variableValue + "$");
             }
-            sendAllData = false;
         }
 
         private static string MapValues(string value)
@@ -92,7 +84,8 @@ namespace FSSimConnector
             {
                 mappedValue = "1";
             }
-            else if (value == "False"){
+            else if (value == "False")
+            {
                 mappedValue = "0";
             }
 
@@ -101,18 +94,16 @@ namespace FSSimConnector
 
         public void ProcessCommandFromArduino(string command)
         {
-            string eventName = "";
-            uint value = 0;
             string pattern = @"^@(.*)\/(.*)=(.*)\$$";
             Match match = Regex.Match(command, pattern);
             if (match.Success)
             {
-                eventName = match.Groups[2].Value;
-                value = uint.Parse(match.Groups[3].Value);
+                string eventName = match.Groups[2].Value;
+                uint value = uint.Parse(match.Groups[3].Value);
                 sendEvent(eventName, value);
                 RequestSimulatorData();
             }
-            
+
         }
 
         public void StartSimDataInterchange(serialManager callback, int refreshIntervalMillis, bool sendAllDataAtStart = true, bool showVariables = false)
@@ -153,9 +144,13 @@ namespace FSSimConnector
                 my_simconnect.OnRecvSimobjectDataBytype += new SimConnect.RecvSimobjectDataBytypeEventHandler(simconnect_OnRecvSimobjectDataBytype);
 
                 timer = new Timer(TimerCallback, null, 0, refreshIntervalMillis);
-                RequestSimulatorData();
 
                 updateArduinoCallback = callback;
+
+                RequestSimulatorData();
+
+
+
             }
             catch (COMException exception1)
             {
@@ -187,7 +182,7 @@ namespace FSSimConnector
                 }
                 catch (COMException)
                 {
-                    Console.WriteLine("Unable to connect to sim. Reconnecting in {0} seconds...", (float)reconnectInterval/1000);
+                    Console.WriteLine("Unable to connect to sim. Reconnecting in {0} seconds...", (float)reconnectInterval / 1000);
                     Thread.Sleep(reconnectInterval);
                 }
             }
@@ -210,7 +205,7 @@ namespace FSSimConnector
             Console.WriteLine("Simulator has exited. Closing connection and exiting Simulator module");
             closeConnection();
             return;
-            
+
         }
 
         private static void closeConnection()
@@ -226,8 +221,8 @@ namespace FSSimConnector
 
         private static void RequestSimulatorData()
         {
-            receiveMessagesFromSimulator();
             sendDataRequestToSimulator();
+            receiveMessagesFromSimulator();
         }
 
         private static void sendDataRequestToSimulator()
@@ -248,12 +243,12 @@ namespace FSSimConnector
 
         public static void TimerCallback(Object o)
         {
-            RequestSimulatorData();            
+            RequestSimulatorData();
         }
 
         private static void sendEvent(string eventName, uint value)
         {
-            if(Enum.IsDefined(typeof(EVENTS), eventName))
+            if (Enum.IsDefined(typeof(EVENTS), eventName))
             {
                 EVENTS eventToSend = (EVENTS)Enum.Parse(typeof(EVENTS), eventName);
                 my_simconnect.MapClientEventToSimEvent((Enum)eventToSend, eventName);
@@ -269,6 +264,6 @@ namespace FSSimConnector
         {
             return (my_simconnect != null);
         }
-        
+
     }
 }

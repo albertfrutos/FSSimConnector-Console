@@ -10,8 +10,8 @@ namespace FSSimConnector
 {
     internal class Configuration
     {
-        public string sendAllDataAtStart { get; set; }
-        public string showVariablesOnScreen { get; set; }
+        public bool sendAllDataAtStart { get; set; }
+        public bool showVariablesOnScreen { get; set; }
         public SimulatorConfiguration simulator { get; set; }
         public SerialPortConfiguration serialPort { get; set; }
 

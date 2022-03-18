@@ -3,6 +3,7 @@ using System.IO.Ports;
 using System.IO;
 using System.Timers;
 using static FSSimConnector.FSSimConnectorManager;
+using System.Text.RegularExpressions;
 
 namespace FSSimConnector
 {
@@ -84,9 +85,10 @@ namespace FSSimConnector
                     if (MyCOMPort.BytesToRead > 0)
                     {
                         string command = MyCOMPort.ReadLine();
-                        if (command.StartsWith("@999"))
+                        string internalCommandPattern = @"^@(9|8)[0-9]{2,}\/";
+                        if (Regex.Match(command, internalCommandPattern).Success)
                         {
-                            handleInternalMessage(command, config.keepAlive.keepAliveTimeoutMillis);
+                            handleInternalMessage(command);
                         }
                         else
                         {
@@ -115,7 +117,7 @@ namespace FSSimConnector
             timerKeepAliveTimeout.Stop();
         }
 
-        private void handleInternalMessage(string command, int keepAliveTimeoutMillis)
+        private void handleInternalMessage(string command)
         {
             Console.WriteLine("Ard -> App : " + command);
 
@@ -130,7 +132,9 @@ namespace FSSimConnector
 
         public void SendKeepAlive(object source, ElapsedEventArgs e)
         {
-            SerialSendData("@999/KA=0$");
+            string cmdKeepAlive = "@999/KA=0$";
+            Console.WriteLine("App -> Ard : " + cmdKeepAlive);
+            SerialSendData(cmdKeepAlive);
             Console.WriteLine("KA Sent");
         }
 
@@ -143,7 +147,6 @@ namespace FSSimConnector
         {
             try
             {
-                Console.WriteLine("App -> Ard : " + cmdToSend);
                 MyCOMPort.WriteLine(cmdToSend);
             }
             catch (IOException ex)
