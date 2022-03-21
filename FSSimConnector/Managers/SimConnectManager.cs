@@ -1,15 +1,10 @@
 ﻿using Microsoft.FlightSimulator.SimConnect;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using static FSSimConnector.FSSimConnectorManager;
-using static FSSimConnector.Program;
 
 namespace FSSimConnector
 {
@@ -20,19 +15,19 @@ namespace FSSimConnector
 
         private static SimConnect my_simconnect = null;
 
-        private static Timer timer = null;
+        private static Timer requestSimulatorDataTimer = null;
 
         static msgManager handleMessage;
 
         private static Struct1 previousData = new Struct1();
 
-        public void requestSendAllData()
+        public void RequestSendAllData()
         {
             Console.WriteLine("Next data report from simulator will contain all requested data.");
             sendAllData = true;
         }
 
-        private static void simconnect_OnRecvSimobjectDataBytype(SimConnect sender, SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE data)
+        private static void Simconnect_OnRecvSimobjectDataBytype(SimConnect sender, SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE data)
         {
             if (data.dwRequestID == 0)
             {
@@ -63,7 +58,7 @@ namespace FSSimConnector
             }
         }
 
-        private static void sendCommand(string command)
+        private static void SendCommand(string command)
         {
             Message msg = new Message(command, Message.MessageOrigin.SIMULATOR,Message.MessageDestination.UNDEFINED);
             handleMessage(msg);
@@ -78,7 +73,7 @@ namespace FSSimConnector
                 //Console.WriteLine(variableName);
                 string variableValue = MapValues(parameterCurrentValue);
                 structToID.TryGetValue(variableName, out int variableID);
-                sendCommand("@" + variableID + "/" + variableName + "=" + variableValue + "$");
+                SendCommand("@" + variableID + "/" + variableName + "=" + variableValue + "$");
             }
         }
 
@@ -89,7 +84,7 @@ namespace FSSimConnector
             if (msgPayload == "@899/SA=1$")
             {
                 Console.WriteLine("Received Request to send all in next update.");
-                requestSendAllData();
+                RequestSendAllData();
             }
         }
 
@@ -122,13 +117,15 @@ namespace FSSimConnector
             }
         }
 
+
+
         public void StartSimDataInterchange(int refreshIntervalMillis, bool sendAllDataAtStart = true, bool showVariables = false)
         {
             showVariablesOnScreen = showVariables;
 
             if (sendAllDataAtStart)
             {
-                requestSendAllData();
+                RequestSendAllData();
             }
             try
             {
@@ -157,16 +154,16 @@ namespace FSSimConnector
                 my_simconnect.AddToDataDefinition(DEFINITIONS.Struct1, "AUTOPILOT YAW DAMPER", null, SIMCONNECT_DATATYPE.INT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
 
                 my_simconnect.RegisterDataDefineStruct<Struct1>(DEFINITIONS.Struct1);
-                my_simconnect.OnRecvSimobjectDataBytype += new SimConnect.RecvSimobjectDataBytypeEventHandler(simconnect_OnRecvSimobjectDataBytype);
+                my_simconnect.OnRecvSimobjectDataBytype += new SimConnect.RecvSimobjectDataBytypeEventHandler(Simconnect_OnRecvSimobjectDataBytype);
 
-                timer = new Timer(TimerCallback, null, 0, refreshIntervalMillis);
+                requestSimulatorDataTimer = new Timer(TimerCallback, null, 0, refreshIntervalMillis);
 
                 RequestSimulatorData();
             }
             catch (COMException exception1)
             {
                 Console.WriteLine("Exception while initializing data request: {0}", exception1.Message);
-                closeConnection();
+                CloseConnection();
             }
         }
 
@@ -215,15 +212,15 @@ namespace FSSimConnector
 
         private static void Simconnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
         {
-            timer.Dispose();
             Console.WriteLine("Simulator has exited. Closing connection and exiting Simulator module");
-            closeConnection();
+            CloseConnection();
             return;
-
         }
 
-        private static void closeConnection()
+        private static void CloseConnection()
         {
+            requestSimulatorDataTimer.Dispose();
+
             if (my_simconnect != null)
             {
                 my_simconnect.Dispose();
@@ -241,9 +238,17 @@ namespace FSSimConnector
 
         private static void SendDataRequestToSimulator()
         {
-            if (my_simconnect != null)
+            try
             {
-                my_simconnect.RequestDataOnSimObjectType(DATA_REQUESTS.REQUEST_1, DEFINITIONS.Struct1, 0, SIMCONNECT_SIMOBJECT_TYPE.USER);
+                if (my_simconnect != null)
+                {
+                    my_simconnect.RequestDataOnSimObjectType(DATA_REQUESTS.REQUEST_1, DEFINITIONS.Struct1, 0, SIMCONNECT_SIMOBJECT_TYPE.USER);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception happened while sending data request to the simulator. Closing connection and exiting Simulator module");
+                CloseConnection();
             }
         }
 
