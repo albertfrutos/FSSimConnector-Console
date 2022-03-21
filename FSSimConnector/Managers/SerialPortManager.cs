@@ -13,12 +13,12 @@ namespace FSSimConnector
 
         static msgManager handleMessage;
 
-        System.Timers.Timer timerKeepAliveTimer = null;
-        System.Timers.Timer timerKeepAliveTimeout = null;
+        Timer timerKeepAliveTimer = null;
+        Timer timerKeepAliveTimeout = null;
 
         bool isSerialAlive = false;
 
-        public bool initialize(msgManager callback, SerialPortConfiguration serialConfig)
+        public bool Initialize(msgManager callback, SerialPortConfiguration serialConfig)
         {
             isSerialAlive = false;
 
@@ -26,7 +26,7 @@ namespace FSSimConnector
 
             MyCOMPort = serialPortConfiguration.LoadSerialConfiguration(serialConfig);
 
-            isSerialAlive = serialPortConfiguration.isPortReady(MyCOMPort);
+            isSerialAlive = serialPortConfiguration.IsPortReady(MyCOMPort);
 
             if((serialConfig.keepAlive.keepAliveMillis >= serialConfig.keepAlive.keepAliveTimeoutMillis) && serialConfig.keepAlive.enableKeepAlive)
             {
@@ -49,7 +49,7 @@ namespace FSSimConnector
             catch (IOException ex)
             {
                 Console.Write("Port is already in use {0}. Exiting serial module...", ex.ToString());
-                closeConnection();
+                CloseConnection();
                 isSerialAlive = false;
                 return isSerialAlive;
             }
@@ -59,7 +59,7 @@ namespace FSSimConnector
             return isSerialAlive;
         }
 
-        public void startKeepAliveWorkflow(KeepAliveSerialConfiguration keepAliveConfig)
+        public void StartKeepAliveWorkflow(KeepAliveSerialConfiguration keepAliveConfig)
         {
             timerKeepAliveTimer = new System.Timers.Timer(keepAliveConfig.keepAliveMillis);
             timerKeepAliveTimer.Elapsed += new ElapsedEventHandler(SendKeepAlive);
@@ -78,11 +78,9 @@ namespace FSSimConnector
 
         public void StartSerialDataInterchange(SerialPortConfiguration config)
         {
-            
-
             if (config.keepAlive.enableKeepAlive)
             {
-                startKeepAliveWorkflow(config.keepAlive);
+                StartKeepAliveWorkflow(config.keepAlive);
             }
 
             while (isSerialAlive)
@@ -91,31 +89,20 @@ namespace FSSimConnector
                 {
                     if (MyCOMPort.BytesToRead > 0)
                     {
-                        string command = MyCOMPort.ReadLine();
-                        sendCommand(command);
-                        /*
-                        string internalCommandPattern = @"^@(9|8)[0-9]{2,}\/";
-                        if (Regex.Match(command, internalCommandPattern).Success)
-                        {
-                            handleInternalMessage(command);
-                        }
-                        else
-                        {
-                            updateSimCallback(command);
-                        }
-                        */
+                        string message = MyCOMPort.ReadLine();
+                        ProcessMessage(message);
                     }
                 }
                 catch (IOException ex)
                 {
                     Console.Write("There was an error reading the serial port: " + ex.ToString());
-                    closeConnection();
+                    CloseConnection();
                     return;
                 }
             }
         }
 
-        private void sendCommand(string command)
+        private void ProcessMessage(string command)
         {
             Message msg = new Message(command, Message.MessageOrigin.SERIAL, Message.MessageDestination.UNDEFINED);
             handleMessage(msg);
@@ -152,7 +139,7 @@ namespace FSSimConnector
             Console.WriteLine("KA Sent");
         }
 
-        public void closeConnection()
+        public void CloseConnection()
         {
             MyCOMPort.Dispose();
             MyCOMPort = null;
@@ -166,11 +153,11 @@ namespace FSSimConnector
             catch (IOException ex)
             {
                 Console.Write("There was a problem sending serial data: {0}", ex.ToString());
-                closeConnection();
+                CloseConnection();
             }
         }
 
-        public bool isAlive()
+        public bool IsAlive()
         {
             return ((MyCOMPort != null) && isSerialAlive);
         }

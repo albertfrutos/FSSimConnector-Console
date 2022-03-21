@@ -12,7 +12,6 @@ namespace FSSimConnector
         private SimConnectManager simConnectManager;
         private SerialPortManager serialPortManager;
 
-
         public MessageHandler(SimConnectManager simConnectMgr, SerialPortManager serialPortMgr)
         {
             simConnectManager = simConnectMgr;
@@ -53,10 +52,10 @@ namespace FSSimConnector
                 message.msgDestination = Message.MessageDestination.UNDEFINED;
             }
 
-            messageRouter(message);
+            MessageRouter(message);
         }
 
-        internal void messageRouter(Message message)
+        internal void MessageRouter(Message message)
         {
             switch (message.msgDestination)
             {

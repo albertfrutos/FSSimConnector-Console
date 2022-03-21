@@ -31,7 +31,7 @@ namespace FSSimConnector
             return MyCOMPort;
         }
 
-        public bool isPortReady(SerialPort myCOMPort)
+        public bool IsPortReady(SerialPort myCOMPort)
         {
             bool portExists = false;
             bool portAvailable = false;

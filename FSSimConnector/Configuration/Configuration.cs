@@ -18,11 +18,11 @@ namespace FSSimConnector
         public Configuration LoadConfiguration()
         {
             var json = File.ReadAllText(@"Files\config.json");
-            Configuration config = deserializeConfiguration(json);
+            Configuration config = DeserializeConfiguration(json);
             return config;
         }
         
-        private Configuration deserializeConfiguration(string json)
+        private Configuration DeserializeConfiguration(string json)
         {
             Configuration config = JsonConvert.DeserializeObject<Configuration>(json);
             return config;

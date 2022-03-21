@@ -84,8 +84,6 @@ namespace FSSimConnector
 
         internal void ProcessInternalSimulatorMessage(string msgPayload)
         {
-            //Console.WriteLine("Not implemented function. Message {0} ignored.", msgPayload);
-
             Console.WriteLine("App -> Sim: " + msgPayload);
 
             if (msgPayload == "@899/SA=1$")
@@ -119,10 +117,9 @@ namespace FSSimConnector
             {
                 string eventName = match.Groups[2].Value;
                 uint value = uint.Parse(match.Groups[3].Value);
-                sendEvent(eventName, value);
+                SendEvent(eventName, value);
                 RequestSimulatorData();
             }
-
         }
 
         public void StartSimDataInterchange(int refreshIntervalMillis, bool sendAllDataAtStart = true, bool showVariables = false)
@@ -135,9 +132,9 @@ namespace FSSimConnector
             }
             try
             {
-                my_simconnect.OnRecvOpen += new SimConnect.RecvOpenEventHandler(simconnect_OnRecvOpen);
-                my_simconnect.OnRecvQuit += new SimConnect.RecvQuitEventHandler(simconnect_OnRecvQuit);
-                my_simconnect.OnRecvException += new SimConnect.RecvExceptionEventHandler(simconnect_OnRecvException);
+                my_simconnect.OnRecvOpen += new SimConnect.RecvOpenEventHandler(Simconnect_OnRecvOpen);
+                my_simconnect.OnRecvQuit += new SimConnect.RecvQuitEventHandler(Simconnect_OnRecvQuit);
+                my_simconnect.OnRecvException += new SimConnect.RecvExceptionEventHandler(Simconnect_OnRecvException);
 
                 my_simconnect.AddToDataDefinition(DEFINITIONS.Struct1, "AUTOPILOT MASTER", null, SIMCONNECT_DATATYPE.INT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
                 my_simconnect.AddToDataDefinition(DEFINITIONS.Struct1, "AUTOPILOT FLIGHT DIRECTOR ACTIVE", null, SIMCONNECT_DATATYPE.INT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
@@ -164,12 +161,7 @@ namespace FSSimConnector
 
                 timer = new Timer(TimerCallback, null, 0, refreshIntervalMillis);
 
-                //updateArduinoCallback = callback;
-
                 RequestSimulatorData();
-
-
-
             }
             catch (COMException exception1)
             {
@@ -178,7 +170,7 @@ namespace FSSimConnector
             }
         }
 
-        public bool connect(msgManager callback, int reconnectInterval, int maxReconnectRetries = 5)
+        public bool Connect(msgManager callback, int reconnectInterval, int maxReconnectRetries = 5)
         {
             int retryNumber = 0;
 
@@ -211,17 +203,17 @@ namespace FSSimConnector
             return true;
         }
 
-        private static void simconnect_OnRecvException(SimConnect sender, SIMCONNECT_RECV_EXCEPTION data)
+        private static void Simconnect_OnRecvException(SimConnect sender, SIMCONNECT_RECV_EXCEPTION data)
         {
 
         }
 
-        private static void simconnect_OnRecvOpen(SimConnect sender, SIMCONNECT_RECV_OPEN data)
+        private static void Simconnect_OnRecvOpen(SimConnect sender, SIMCONNECT_RECV_OPEN data)
         {
 
         }
 
-        private static void simconnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
+        private static void Simconnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
         {
             timer.Dispose();
             Console.WriteLine("Simulator has exited. Closing connection and exiting Simulator module");
@@ -243,11 +235,11 @@ namespace FSSimConnector
 
         private static void RequestSimulatorData()
         {
-            sendDataRequestToSimulator();
-            receiveMessagesFromSimulator();
+            SendDataRequestToSimulator();
+            ReceiveMessagesFromSimulator();
         }
 
-        private static void sendDataRequestToSimulator()
+        private static void SendDataRequestToSimulator()
         {
             if (my_simconnect != null)
             {
@@ -255,7 +247,7 @@ namespace FSSimConnector
             }
         }
 
-        private static void receiveMessagesFromSimulator()
+        private static void ReceiveMessagesFromSimulator()
         {
             if (my_simconnect != null)
             {
@@ -268,7 +260,7 @@ namespace FSSimConnector
             RequestSimulatorData();
         }
 
-        private static void sendEvent(string eventName, uint value)
+        private static void SendEvent(string eventName, uint value)
         {
             if (Enum.IsDefined(typeof(EVENTS), eventName))
             {
@@ -282,10 +274,9 @@ namespace FSSimConnector
             }
         }
 
-        public bool isAlive()
+        public bool IsAlive()
         {
             return (my_simconnect != null);
         }
-
     }
 }
