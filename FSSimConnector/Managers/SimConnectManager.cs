@@ -22,7 +22,7 @@ namespace FSSimConnector
 
         private static Timer timer = null;
 
-        static serialManager updateArduinoCallback;
+        static msgManager handleMessage;
 
         private static Struct1 previousData = new Struct1();
 
@@ -63,6 +63,12 @@ namespace FSSimConnector
             }
         }
 
+        private static void sendCommand(string command)
+        {
+            Message msg = new Message(command, Message.MessageOrigin.SIMULATOR,Message.MessageDestination.UNDEFINED);
+            handleMessage(msg);
+        }
+
         private static void ProcessVarsAndSendToArduino(string name, string parameterCurrentValue, string parameterPreviousValue)
         {
 
@@ -72,7 +78,20 @@ namespace FSSimConnector
                 //Console.WriteLine(variableName);
                 string variableValue = MapValues(parameterCurrentValue);
                 structToID.TryGetValue(variableName, out int variableID);
-                updateArduinoCallback("@" + variableID + "/" + variableName + "=" + variableValue + "$");
+                sendCommand("@" + variableID + "/" + variableName + "=" + variableValue + "$");
+            }
+        }
+
+        internal void ProcessInternalSimulatorMessage(string msgPayload)
+        {
+            //Console.WriteLine("Not implemented function. Message {0} ignored.", msgPayload);
+
+            Console.WriteLine("App -> Sim: " + msgPayload);
+
+            if (msgPayload == "@899/SA=1$")
+            {
+                Console.WriteLine("Received Request to send all in next update.");
+                requestSendAllData();
             }
         }
 
@@ -92,7 +111,7 @@ namespace FSSimConnector
             return mappedValue;
         }
 
-        public void ProcessCommandFromArduino(string command)
+        public void ProcessMessageFromArduinoToSimulator(string command)
         {
             string pattern = @"^@(.*)\/(.*)=(.*)\$$";
             Match match = Regex.Match(command, pattern);
@@ -106,7 +125,7 @@ namespace FSSimConnector
 
         }
 
-        public void StartSimDataInterchange(serialManager callback, int refreshIntervalMillis, bool sendAllDataAtStart = true, bool showVariables = false)
+        public void StartSimDataInterchange(int refreshIntervalMillis, bool sendAllDataAtStart = true, bool showVariables = false)
         {
             showVariablesOnScreen = showVariables;
 
@@ -145,7 +164,7 @@ namespace FSSimConnector
 
                 timer = new Timer(TimerCallback, null, 0, refreshIntervalMillis);
 
-                updateArduinoCallback = callback;
+                //updateArduinoCallback = callback;
 
                 RequestSimulatorData();
 
@@ -159,7 +178,7 @@ namespace FSSimConnector
             }
         }
 
-        public bool connect(int reconnectInterval, int maxReconnectRetries = 5)
+        public bool connect(msgManager callback, int reconnectInterval, int maxReconnectRetries = 5)
         {
             int retryNumber = 0;
 
@@ -186,6 +205,9 @@ namespace FSSimConnector
                     Thread.Sleep(reconnectInterval);
                 }
             }
+
+            handleMessage = callback;
+
             return true;
         }
 

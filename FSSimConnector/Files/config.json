@@ -14,7 +14,7 @@
     }
   },
   "simulator": {
-    "simDataRefreshIntervalMillis": 500,
+    "simDataRefreshIntervalMillis": 5000,
     "reconnectInterval": 2000,
     "maxReconnectRetries": 5
   }

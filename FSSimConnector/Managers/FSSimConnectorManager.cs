@@ -9,11 +9,12 @@ namespace FSSimConnector
 {
     internal class FSSimConnectorManager
     {
-        public delegate void serialManager(string command);
-        public delegate void simManager(string command);
+        public delegate void msgManager(Message message);
 
         public static SimConnectManager simConnection = new SimConnectManager();
         public static SerialPortManager serialPort = new SerialPortManager();
+
+        public MessageHandler msgHandler = new MessageHandler(simConnection, serialPort);
 
         public List<Thread> Start()
         {
@@ -26,14 +27,13 @@ namespace FSSimConnector
             Configuration configuration = new Configuration();
             configuration = configuration.LoadConfiguration();
 
-            serialManager updateArduinoCallback = new serialManager(SendToArduino);
-            simManager updateSimulatorCallback = new simManager(SendToSimulator);
+            msgManager msgHandlerManager = new msgManager(msgHandler.HandleMessage);
 
-            serialPortStatus = serialPort.initialize(configuration.serialPort);
-            simConnStatus = simConnection.connect(configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
+            serialPortStatus = serialPort.initialize(msgHandlerManager, configuration.serialPort);
+            simConnStatus = simConnection.connect(msgHandlerManager, configuration.simulator.reconnectInterval, configuration.simulator.maxReconnectRetries);
 
-            Thread simulatorDataManager = new Thread(() => simConnection.StartSimDataInterchange(updateArduinoCallback, configuration.simulator.simDataRefreshIntervalMillis, configuration.sendAllDataAtStart, configuration.showVariablesOnScreen));
-            Thread serialDataManager = new Thread(() => serialPort.StartSerialDataInterchange(updateSimulatorCallback, configuration.serialPort));
+            Thread simulatorDataManager = new Thread(() => simConnection.StartSimDataInterchange(configuration.simulator.simDataRefreshIntervalMillis, configuration.sendAllDataAtStart, configuration.showVariablesOnScreen));
+            Thread serialDataManager = new Thread(() => serialPort.StartSerialDataInterchange(configuration.serialPort));
 
             if (serialPortStatus && simConnStatus)
             {
@@ -77,7 +77,7 @@ namespace FSSimConnector
         public static void SendToSimulator(string command)
         {
             Console.WriteLine("Ard -> Sim : " + command);
-            simConnection.ProcessCommandFromArduino(command);
+            simConnection.ProcessMessageFromArduinoToSimulator(command);
         }
 
         public static void SendToArduino(string command)

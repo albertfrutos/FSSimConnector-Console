@@ -11,14 +11,14 @@ namespace FSSimConnector
     {
         SerialPort MyCOMPort = new SerialPort();
 
-        static simManager updateSimCallback;
+        static msgManager handleMessage;
 
         System.Timers.Timer timerKeepAliveTimer = null;
         System.Timers.Timer timerKeepAliveTimeout = null;
 
         bool isSerialAlive = false;
 
-        public bool initialize(SerialPortConfiguration serialConfig)
+        public bool initialize(msgManager callback, SerialPortConfiguration serialConfig)
         {
             isSerialAlive = false;
 
@@ -54,6 +54,8 @@ namespace FSSimConnector
                 return isSerialAlive;
             }
 
+            handleMessage = callback;
+
             return isSerialAlive;
         }
 
@@ -69,9 +71,14 @@ namespace FSSimConnector
             timerKeepAliveTimeout.Start();
         }
 
-        public void StartSerialDataInterchange(simManager callback, SerialPortConfiguration config)
+        internal void ProcessMessageFromSimulatorToArduino(string msgPayload)
         {
-            updateSimCallback = callback;
+            SerialSendData(msgPayload);
+        }
+
+        public void StartSerialDataInterchange(SerialPortConfiguration config)
+        {
+            
 
             if (config.keepAlive.enableKeepAlive)
             {
@@ -85,6 +92,8 @@ namespace FSSimConnector
                     if (MyCOMPort.BytesToRead > 0)
                     {
                         string command = MyCOMPort.ReadLine();
+                        sendCommand(command);
+                        /*
                         string internalCommandPattern = @"^@(9|8)[0-9]{2,}\/";
                         if (Regex.Match(command, internalCommandPattern).Success)
                         {
@@ -94,6 +103,7 @@ namespace FSSimConnector
                         {
                             updateSimCallback(command);
                         }
+                        */
                     }
                 }
                 catch (IOException ex)
@@ -105,7 +115,11 @@ namespace FSSimConnector
             }
         }
 
-
+        private void sendCommand(string command)
+        {
+            Message msg = new Message(command, Message.MessageOrigin.SERIAL, Message.MessageDestination.UNDEFINED);
+            handleMessage(msg);
+        }
 
         private void KeepAliveIsTimeout(object source, ElapsedEventArgs e)
         {
@@ -117,11 +131,11 @@ namespace FSSimConnector
             timerKeepAliveTimeout.Stop();
         }
 
-        private void handleInternalMessage(string command)
+        public void ProcessSerialInternalMessage(string command)
         {
             Console.WriteLine("Ard -> App : " + command);
 
-            if (command == "@999/KA=1$")
+            if (command == "@999/KA=1$" && timerKeepAliveTimeout != null)
             {
                 isSerialAlive = true;
                 Console.WriteLine("Received KeepAlive.");
